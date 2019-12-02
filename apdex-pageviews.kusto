@@ -1,0 +1,20 @@
+let apdexThreshhold = toint('2000');
+let apdexData = pageViews
+//| union app("<applpication-name>").pageViews
+| where name in ('*') or '*' in ('*')
+| extend success = columnifexists('success', true)
+| extend Failure = iff('ConsiderFailures' == 'ConsiderFailures' and success == false, 1, 0)
+| extend InterestingDimension = iff(isempty(appName)== true, 'Unknown', appName)
+| where InterestingDimension in ('*') or '*' in ('*')
+| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, InterestingDimension
+| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')
+| extend UserExperience = case(Failures > 0, "Frustrated", UserExperience)
+| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Frustrated = countif(UserExperience == 'Frustrated'), Total = count() by InterestingDimension
+| project InterestingDimension, ["Satisfied Users"] = Satisfied, ["Tolerating Users"] = Tolerating, ["Frustrated Users"] = Frustrated, ["Apdex Score"] = round((Satisfied + (Tolerating / 2.0)) / Total, 2), Total
+| extend Relevance = iff(["Apdex Score"] == 0, pow(Total, 1.6), Total / ["Apdex Score"])
+| project-rename Users = Total
+| order by Relevance desc
+| project-away Relevance;
+apdexData
+| extend ["Apdex Interpretation"] = case(["Apdex Score"] <= 0.5, '⛔ Unacceptable', ["Apdex Score"] <= 0.7, '⚠️ Poor', ["Apdex Score"] <= 0.85, '⚠️ Fair', ["Apdex Score"] <= 0.94, '✔️ Good', '✔️ Excellent')
+| project Values = InterestingDimension, ["Apdex Score"], ["Apdex Interpretation"], ["% Statisfied"] = round((["Satisfied Users"]*100.0)/Users,2), ["% Tolerating"] = round((["Tolerating Users"]*100.0)/Users,2), ["% Frustrated"] = round((["Frustrated Users"]*100.0)/Users,2)
