@@ -17,4 +17,4 @@ let apdexData = requests
 | project-away Relevance;
 apdexData
 | extend ["Apdex Interpretation"] = case(["Apdex Score"] <= 0.5, '⛔ Unacceptable', ["Apdex Score"] <= 0.7, '⚠️ Poor', ["Apdex Score"] <= 0.85, '⚠️ Fair', ["Apdex Score"] <= 0.94, '✔️ Good', '✔️ Excellent')
-| project Values = InterestingDimension, ["Apdex Score"], ["Apdex Interpretation"], ["% Statisfied"] = round((["Satisfied Users"]*100.0)/Users,2), ["% Toleration"] = round((["Tolerating Users"]*100.0)/Users,2), ["% Frustrated"] = round((["Frustrated Users"]*100.0)/Users,2)
+| project Application = InterestingDimension, ["Apdex Score"], ["Apdex Interpretation"], ["% Statisfied"] = round((["Satisfied Users"]*100.0)/Users,2), ["% Toleration"] = round((["Tolerating Users"]*100.0)/Users,2), ["% Frustrated"] = round((["Frustrated Users"]*100.0)/Users,2)
